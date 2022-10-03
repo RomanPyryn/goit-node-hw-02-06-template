@@ -1,17 +1,15 @@
 const express = require("express");
-const Joi = require('joi');
-
-const contacts = require("../../models/contacts");
-
+const { addContactValidation, updateContactValidation, updateStatusValidation } = require('../../models/modelContacts');
+const { listContacts, getContactById, removeContact, addContact, updateContact, updateStatus} = require("../../controllers/contacts/index");
 const router = express.Router();
 
 router.get('/', async (req, res, next) => {
-  const result = await contacts.listContacts();
+  const result = await listContacts();
   return res.status(200).json({ result, message: 'Success' });
 })
 
 router.get('/:contactId', async (req, res, next) => {  
-  const contact = await contacts.getContactById(req.params.contactId);
+  const contact = await getContactById(req.params.contactId);
 
   if (!contact) {
     return res.status(404).json({ message: 'Not found' });
@@ -36,32 +34,18 @@ router.post('/', async (req, res, next) => {
     return res.status(400).json({ message: `Missing required phone field` });
   }
 
-  const schema = Joi.object({
-    name: Joi.string()
-      .pattern(/^\w+\s/)
-      .min(3)
-      .max(30)
-      .required(),
-    email:Joi.string()
-      .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'org'] } })
-      .required(),
-    phone: Joi.string()
-      .pattern(/^(?:\+38)?(?:\(\d{3}\)[ .-]?[0-9]{3}[ .-]?[0-9]{2}[ .-]?[0-9]{2}|044[ .-]?[0-9]{3}[ .-]?[0-9]{2}[ .-]?[0-9]{2}|044[0-9]{7})/)
-      .required(),
-  });
-
-  const validation = schema.validate(req.body); 
+  const validation = addContactValidation(req.body); 
   if (validation.error) {
     return res.status(400).json({ message: `Failed because ${validation.error}` });
   }
 
-  const contact = await contacts.addContact(req.body);
+  const contact = await addContact(req.body);
   return res.status(201).json({ contact, message: 'Success' });
 })
 
 router.delete('/:contactId', async (req, res, next) => {
   
-  const contact = await contacts.removeContact(req.params.contactId);
+  const contact = await removeContact(req.params.contactId);
 
   if(contact) {
     return res.status(200).json({ message: 'Contact deleted' });
@@ -78,35 +62,35 @@ router.put('/:contactId', async (req, res, next) => {
     return res.status(400).json({ message: 'Missing fields' });
   }
 
-  const schema = Joi.object({
-    name: Joi.string()
-      .pattern(/^\w+\s/)
-      .min(3)
-      .max(30)
-      .optional(),
-    email: Joi.string()
-      .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net', 'org'] } })
-      .optional(),
-    phone: Joi.string()
-      .pattern(/^(?:\+38)?(?:\(\d{3}\)[ .-]?[0-9]{3}[ .-]?[0-9]{2}[ .-]?[0-9]{2}|044[ .-]?[0-9]{3}[ .-]?[0-9]{2}[ .-]?[0-9]{2}|044[0-9]{7})/)
-      .optional(),
-  });
-
-  const validation = schema.validate(req.body);
+  const validation = updateContactValidation(req.body);
   
   if (validation.error) {
     return res.status(400).json({ message: `Failed because ${validation.error}` });
   }
 
-  const contact = await contacts.updateContact(req.params.contactId, req.body);
-
-  // const contact = result.filter(contact => contact.id === req.params.contactId);
+  const contact = await updateContact(req.params.contactId, req.body);
 
   if (contact) {
     return res.status(200).json({ contact, message: 'Success' });
   }
   
   return res.status(404).json({ message: 'Not found' });  
+})
+
+router.patch('/:contactId/favorite', async (req, res, next) => {
+  const validation = updateStatusValidation(req.body); 
+
+   if (validation.error) {
+    return res.status(400).json({ message: `Failed because ${validation.error}` });
+  }
+
+  const contact = await updateStatus(req.params.contactId, req.body);
+
+  if (contact) {
+    return res.status(200).json({ contact, message: 'Success' });
+  }
+  
+  return res.status(404).json({ message: 'Not found' }); 
 })
 
 module.exports = router;
