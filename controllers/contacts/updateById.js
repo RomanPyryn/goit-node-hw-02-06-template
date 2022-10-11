@@ -1,6 +1,6 @@
 const { Contact } = require("../../models/modelContacts");
 
-const updateContact = async (contactId, body) => {
+const updateContact = async (userFromReq, contactId, body) => {
   try {
     const { name, email, phone } = body;
     const updatedContact = {};
@@ -23,8 +23,10 @@ const updateContact = async (contactId, body) => {
       }
     }
 
+    const { _id: owner } = userFromReq;
+
     const contact = await Contact.findOneAndUpdate(
-      { _id: contactId },
+      { _id: contactId, owner },
       updatedContact,
       { new: true }
     );
