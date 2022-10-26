@@ -18,6 +18,14 @@ const usersSchema = new mongoose.Schema({
   },
   token: String,
   avatarURL: String,
+  verify: {
+    type: Boolean,
+    default: false,
+  },
+  verificationToken: {
+    type: String,
+    required: [true, "Verify token is required"],
+  },
 });
 
 const User = mongoose.model("User", usersSchema);
@@ -27,6 +35,14 @@ function registerValidation(body) {
     name: Joi.string(),
     email: Joi.string().required(),
     password: Joi.string().min(6).required(),
+  });
+
+  return schema.validate(body);
+}
+
+function verifyEmailSchema(body) {
+  const schema = Joi.object({
+    email: Joi.string().required(),
   });
 
   return schema.validate(body);
@@ -45,4 +61,5 @@ module.exports = {
   User,
   registerValidation,
   loginValidation,
+  verifyEmailSchema,
 };
